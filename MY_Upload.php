@@ -245,9 +245,9 @@
 			 * @access	public
 			 * @return	array
 			 */
-				public function get_multi_upload_data(){
-					return $this->_multi_upload_data;
-				}
+            public function get_multi_upload_data(){
+                return $this->_multi_upload_data;
+            }
 				
 				
 			/**
@@ -378,7 +378,7 @@
 						}
 						
 						//Sanitize the file name for security.
-						$this->file_name = $this->clean_file_name($this->file_name);
+						$this->file_name = $this->_CI->security->clean_file_name($this->file_name);
 						
 						//Truncate the file name if it's too long
 						if($this->max_filename > 0){
@@ -389,31 +389,33 @@
 						if($this->remove_spaces == TRUE){
 							$this->file_name = preg_replace("/\s+/", "_", $this->file_name);
 						}
+
+
+                        if ($this->file_ext_tolower && ($ext_length = strlen($this->file_ext))) {
+                            $this->file_name = substr($this->file_name, 0, -$ext_length).$this->file_ext;
+                        }
 						
 						/* Validate the file name
 						 * This function appends an number onto the end of
 						 * the file if one with the same name already exists.
 						 * If it returns false there was a problem.
 						 */
-							$this->orig_name = $this->file_name;
-							if($this->overwrite == FALSE){
-								$this->file_name = $this->set_filename($this->upload_path, $this->file_name);
-								if($this->file_name === FALSE){
-									return FALSE;
-								}
-							}
+                        $this->orig_name = $this->file_name;
+                        if($this->overwrite == FALSE){
+                            if (FALSE === ($this->file_name = $this->set_filename($this->upoad_path, $this->file_name))) {
+                                return FALSE;
+                            }
+                        }
 							
 						/* Run the file through the XSS hacking filter
 						 * This helps prevent malicious code from being
 						 * embedded within a file.  Scripts can easily
 						 * be disguised as images or other file types.
 						 */
-							if($this->xss_clean){
-								if($this->do_xss_clean() === FALSE){
-									$this->set_error("upload_unable_to_write_file");
-									return FALSE;
-								}
-							}
+                        if($this->xss_clean && $this->do_xss_clean() === FALSE){
+                            $this->set_error("upload_unable_to_write_file");
+                            return FALSE;
+                        }
 							
 						/* Move the file to the final destination
 						 * To deal with different server configurations
@@ -421,19 +423,19 @@
 						 * we'll use move_uploaded_file().  One of the two should
 						 * reliably work in most environments
 						 */
-							if(!@copy($this->file_temp, $this->upload_path.$this->file_name)){
-								if(!@move_uploaded_file($this->file_temp, $this->upload_path.$this->file_name)){
-									$this->set_error("upload_destination_error");
-									return FALSE;
-								}
-							}
+                        if(!@copy($this->file_temp, $this->upload_path.$this->file_name)){
+                            if(!@move_uploaded_file($this->file_temp, $this->upload_path.$this->file_name)){
+                                $this->set_error("upload_destination_error");
+                                return FALSE;
+                            }
+                        }
 						
 						/* Set the finalized image dimensions
 						 * This sets the image width/height (assuming the
 						 * file was an image).  We use this information
 						 * in the "data" function.
 						 */
-							$this->set_image_properties($this->upload_path.$this->file_name);
+                        $this->set_image_properties($this->upload_path.$this->file_name);
 							
 						//Set current file data to multi_file_upload_data.
 						$this->set_multi_upload_data();
